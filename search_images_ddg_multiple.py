@@ -28,7 +28,18 @@ def search_images_ddg(key,max_n=200):
          except:
              pass
 
-urls = search_images_ddg('grizzyl bear', max_n=5)
+bear_types = 'grizzly', 'black', 'teddy'
 
-for num, path in enumerate(urls):
-    download_url(path, f'bears/black/black_{num}.jpg')
+for types in bear_types:
+    dest_path = Path(f'bears/{types}')
+    urls = search_images_ddg(types, max_n=5)
+    
+    if not dest_path.exists():
+        print(f'Processing .. {types}')
+        dest_path.mkdir()
+        dest_path.mkdir(exist_ok=True)
+    else:
+        print('Already Done!')
+    for num, path in enumerate(urls):
+            download_url(path, f'bears/{types}/{types}_{num}.jpg' )
+    
