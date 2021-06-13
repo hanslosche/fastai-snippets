@@ -29,10 +29,11 @@ def search_images_ddg(key,max_n=200):
              pass
 
 bear_types = 'grizzly', 'black', 'teddy'
+main_path = Path('bears')
 
 for types in bear_types:
     dest_path = Path(f'bears/{types}')
-    urls = search_images_ddg(types, max_n=5)
+    urls = search_images_ddg(types, max_n=62)
     
     if not dest_path.exists():
         print(f'Processing .. {types}')
@@ -41,5 +42,25 @@ for types in bear_types:
     else:
         print('Already Done!')
     for num, path in enumerate(urls):
-            download_url(path, f'bears/{types}/{types}_{num}.jpg' )
-    
+            dest_new = f'bears/{types}/{types}_{num}.jpg' 
+            print(dest_new)
+            download_url(path, dest_new )
+
+bears = DataBlock(
+    blocks=(ImageBlock, CategoryBlock),
+    get_items=get_image_files,
+    splitter=RandomSplitter(valid_pct=0.2, seed=4),
+    get_y=parent_label,
+    item_tfms=Resize(128))
+
+bears = bears.new(item_tfms=RandomResizedCrop(224, min_scale=0.5),
+        batch_tfms=aug_transforms())
+failed = verify_images(main_path)
+failed.map(main_path.unlink)
+dls = bears.dataloaders(main_path, num_workers=0)
+learn = cnn_learner(dls, resnet18, metrics=error_rate)
+learn.fine_tune(2)
+
+interp = ClassificationInterpretation.from_learner(learn)
+interp.plot_confusion_matrix()
+interp.plot_top_losses(5, nrows=1)
